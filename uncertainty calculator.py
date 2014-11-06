@@ -133,7 +133,7 @@ class Measurement (numbers.Real):
         import math
         uncert_precision = -math.floor (math.log10 (abs (self.uncertainty))) #TODO: fix this
         #the error only has one decimal place and it doesn't make sense to return the value more precisely than that (for PHY180 at least)
-        return u"{}±{}".format (round (self.value, uncert_precision), round (self.uncertainty, uncert_precision))
+        return "{}±{}".format (round (self.value, uncert_precision), round (self.uncertainty, uncert_precision))
     def __trunc__ (self):
         import math
         return Measurement (math.trunc (self.value), math.trunc (self.uncertainty))
@@ -146,7 +146,8 @@ if __name__ == "__main__":
     #I don't guarantee that this code works. 
     M = Measurement
 
-    '''d = M(2.8480, 0.0005)
+    '''
+    d = M(2.8480, 0.0005)
     t = M(0.755, 0.005)
 
     print (d + t)
@@ -155,4 +156,17 @@ if __name__ == "__main__":
     print (e, e + d, e * d)
     print ("d * 4 = ", d * 4)
     print ("4 * d = ", 4 * d)
-    print (d * 4.53, 4.15 * d)'''
+    print (d * 4.53, 4.15 * d)
+    '''
+
+    #create a simple shell for phones
+    cmd = ""
+    while (True):
+        cmd = input(" >>> ")
+        try:
+            exec("print (" + cmd + ")")        
+        except TypeError:
+            exec(cmd)
+        except Exception as e:
+            print (e)
+    
