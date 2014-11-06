@@ -11,14 +11,34 @@
 # Possible improvements:
 # - add support for units.
 # - if I use this heavily, create __iadd__, __isub__ etc. to be more efficient. 
-################################
+#################################################################################
+
+
+########################### INSTRUCTIONS #####################################
+# Run this file in IDLE which can be found at (for windows): C:/Python33/Lib/idlelib/idle.bat
+# Press F5 to run the calculator. 
+#
+# To create a value with an uncertainty (e.g. 5.2±0.3, use: 
+# >>> a = Measurement(5.2, 0.3)
+# or (M is short for Measurement)-
+# >>> a = M(5.2, 0.3)
+#
+# To do arithmetic, add variables or measurements. +, -, *, / and ** (for integer powers) are defined 
+# >>> b = M(5.26, 0.05)
+# >>> a + b
+# >>> (a + b) * M(6.245, 0.004)
+#
+# The underscore is helpful. It refers to the output of the last line.
+# The following is equivalent to the above. 
+# >>> a + b
+# >>> _ * M(6.245, 0.004) 
 
 import numbers
 
 class Measurement (numbers.Real):
     def __init__ (self, value, uncertainty):
         self.value = value
-        self.uncertainty = uncertainty
+        self.uncertainty = abs(uncertainty)
 
     def _operator_fallbacks(base_operator):
         """
@@ -26,17 +46,18 @@ class Measurement (numbers.Real):
         Interpreted from https://docs.python.org/3.3/library/numbers.html
         """
         def forward (a, b):
-            if isinstance (b, numbers.Integral):
-                return base_operator (a, Measurement (b, 0))
-            elif isinstance (b, Measurement):
+            if isinstance (b, Measurement):
                 return base_operator (a, b)
-            else:
+            elif isinstance (b, numbers.Real):
+                return base_operator (a, Measurement (b, 0))
+            
+            else:   
                 return NotImplemented
         def reverse (b, a):
-            if isinstance (a, numbers.Integral):
-                return base_operator (Measurement (a, 0), b)
-            elif isinstance (b, Measurement):
+            if isinstance (a, Measurement):
                 return base_operator (a, b)
+            elif isinstance (b, numbers.Real):
+                return base_operator (Measurement (a, 0), b)
             else:
                 return NotImplemented
         forward.__doc__ = base_operator.__doc__
@@ -51,15 +72,15 @@ class Measurement (numbers.Real):
     def _sub (self, other):
         return Measurement (self.value - other.value, max (self.uncertainty, other.uncertainty))
     def _mul (self, other):
-        if self.uncertainty / self.value > other.uncertainty / other.value:
-            return Measurement (self.value * other.value, other.value * self.uncertainty) #self.value * other.value * self.uncertainty / self.value
+        if abs(self.uncertainty / self.value) > abs(other.uncertainty / other.value):
+            return Measurement (self.value * other.value, abs(other.value * self.uncertainty)) #self.value * other.value * self.uncertainty / self.value
         else:
-            return Measurement (self.value * other.value, self.value * other.uncertainty) #self.value * other.value * other.uncertainty / other.value
+            return Measurement (self.value * other.value, abs(self.value * other.uncertainty)) #self.value * other.value * other.uncertainty / other.value
     def _truediv (self, other):
-        if self.uncertainty / self.value > other.uncertainty / other.value:
-            return Measurement (self.value / other.value, self.uncertainty / other.value) #self.value / other.value * self.uncertainty / self.value
+        if abs(self.uncertainty / self.value) > abs(other.uncertainty / other.value):
+            return Measurement (self.value / other.value, abs(self.uncertainty / other.value)) #self.value / other.value * self.uncertainty / self.value
         else:
-            return Measurement (self.value / other.value, self.value / other.value * other.uncertainty / other.value) #self.value / other.value * other.uncertainty / other.value
+            return Measurement (self.value / other.value, abs(self.value / other.value * other.uncertainty / other.value)) #self.value / other.value * other.uncertainty / other.value
     def __pow__ (self, other):
         "Raise to a power. Only defined on integral powers"
         if isinstance (other, numbers.Integral):
@@ -107,7 +128,7 @@ class Measurement (numbers.Real):
             return NotImplemented
     def __repr__ (self):
         import math
-        uncert_precision = -math.floor (math.log10 (self.uncertainty))
+        uncert_precision = -math.floor (math.log10 (abs (self.uncertainty))) #TODO: fix this
         #the error only has one decimal place and it doesn't make sense to return the value more precisely than that (for PHY180 at least)
         return "{}±{}".format (round (self.value, uncert_precision), round (self.uncertainty, uncert_precision))
     def __trunc__ (self):
@@ -125,4 +146,10 @@ if __name__ == "__main__":
     d = M(2.8480, 0.0005)
     t = M(0.755, 0.005)
 
-#
+    print (d + t)
+    print (-d)
+    e = M(-5.25, 1)
+    print (e, e + d, e * d)
+    print ("d * 4 = ", d * 4)
+    print ("4 * d = ", 4 * d)
+    print (d * 4.53, 4.15 * d)
